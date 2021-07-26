@@ -1,0 +1,101 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: hello
+  namespace: sample
+  labels:
+    app: hello
+    service: hello
+spec:
+  ports:
+    - port: 8080
+      name: http
+  selector:
+    app: hello
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello
+  namespace: sample
+  labels:
+    app: hello
+    version: v1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hello
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: hello
+        version: v1
+    spec:
+      containers:
+        - name: hello
+          image: repo/hello:v0.0.1
+          resources:
+            requests:
+              cpu: "100m"
+          imagePullPolicy: IfNotPresent #Always
+          command:
+            - /app/main
+            - --ip
+            - 192.168.0.1
+          ports:
+            - containerPort: 8080
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  namespace: sample
+  name: sleep
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: sample
+  name: sleep
+  labels:
+    app: sleep
+    service: sleep
+spec:
+  ports:
+    - port: 80
+      name: http
+  selector:
+    app: sleep
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: sample
+  name: sleep
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sleep
+  template:
+    metadata:
+      labels:
+        app: sleep
+    spec:
+      terminationGracePeriodSeconds: 0
+      serviceAccountName: sleep
+      containers:
+        - name: sleep
+          image: repo/curl
+          command: ["/bin/sleep", "3650d"]
+          imagePullPolicy: IfNotPresent
+          volumeMounts:
+            - mountPath: /etc/sleep/tls
+              name: secret-volume
+      volumes:
+        - name: secret-volume
+          secret:
+            secretName: sleep-secret
+            optional: true
+---
