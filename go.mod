@@ -1,4 +1,4 @@
-module hello
+module github.com/ha5ky/hello
 
 go 1.16
 
